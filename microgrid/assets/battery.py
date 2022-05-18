@@ -5,7 +5,7 @@ from random import uniform
 
 class BatteryState(enum.IntEnum):
     """
-    Enum for the battery states
+    Enum for the itates
     """
     OK = 0
     OVERCHARGED = 1
