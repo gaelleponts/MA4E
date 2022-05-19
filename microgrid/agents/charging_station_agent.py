@@ -49,7 +49,7 @@ class ChargingStationAgent:
                     const_name = 'batterie_' + str(t) + '_' + str(j)
                     lp += batterie[t][j] == batterie[t-1][j] - 4, const_name  # pendant la journée le véhicule a perdu 4kwh
                 elif state['is_plugged_prevision'][j][t-1] - state['is_plugged_prevision'][j][t - 2] == -1: #la voiture vient de partir
-                    lp += batterie[t-1][j]>=4
+                    lp += batterie[t-1][j] >= 4
                     const_name = 'pénalités_' + str(t) + '_' + str(j)
                     lp += batterie[t][j]>=0.25*self.env.evs[j].battery.capacity*(1-penalite[t][j]), const_name
         for t in range(1, nb_periodes + 1):
