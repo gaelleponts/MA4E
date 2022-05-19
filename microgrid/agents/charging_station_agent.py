@@ -43,20 +43,21 @@ class ChargingStationAgent:
             lp += batterie[0][j] == state['soc'][j], const_name
             for t in range(1, nb_periodes + 1):
                 lp += batterie[t][j] == state['is_plugged_prevision'][j][t-1] * charge[t][j] * self.env.evs[
-                    j].battery.efficiency / 2 + batterie[t - 1][j]
+                    j].battery.efficiency*delta_t/datetime.timedelta(hours=1) + batterie[t - 1][j]
                 if state['is_plugged_prevision'][j][t-1] - state['is_plugged_prevision'][j][
                     t - 2] == 1:  # la voiture vient d'arriver
                     const_name = 'batterie_' + str(t) + '_' + str(j)
-                    lp += batterie[t][j] == batterie[t - 1][j] - 4, const_name  # pendant la journée le véhicule a perdu 4kwh
+                    lp += batterie[t][j] == batterie[t-1][j] - 4, const_name  # pendant la journée le véhicule a perdu 4kwh
                 elif state['is_plugged_prevision'][j][t-1] - state['is_plugged_prevision'][j][t - 2] == -1: #la voiture vient de partir
+                    lp += batterie[t-1][j]>=4
                     const_name = 'pénalités_' + str(t) + '_' + str(j)
-                    lp += penalite[t][j] == (batterie[t][j] <= 0.25 * self.env.evs[j].battery.capacity)
+                    lp += batterie[t][j]>=0.25*self.env.evs[j].battery.capacity*(1-penalite[t][j]), const_name
         for t in range(1, nb_periodes + 1):
             const_name = 'charge_station' + '_' + str(t) + '_' + str(j)
-            lp += pulp.lpSum(charge[t][j] for j in range(nb_voitures)) <= self.env.pmax_site  # contrainte de station de charge
+            lp += pulp.lpSum(charge[t][j] for j in range(nb_voitures)) <= self.env.pmax_site, const_name  # contrainte de station de charge
 
         ## fonction objectif
-        lp.setObjective(pulp.lpSum(pulp.lpSum(charge[t + 1][j] for j in range(4)) * lbd[t] for t in range(48)) + amende * pulp.lpSum(pulp.lpSum(penalite[t][j] for t in range(1, 49)) for j in range(4)))
+        lp.setObjective(pulp.lpSum(charge[t + 1][j] * lbd[t] for j in range(4) for t in range(48)) +amende * pulp.lpSum(penalite[t][j] for t in range(1, 49) for j in range(4)))
 
         ##on resout
         lp.solve()
